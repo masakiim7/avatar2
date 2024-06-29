@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './App.css';
 
@@ -19,13 +19,7 @@ function App() {
   const [savedNotes, setSavedNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (recognition) {
-      handleListen();
-    }
-  }, [isListening]);
-
-  const handleListen = () => {
+  const handleListen = useCallback(() => {
     if (!recognition) return;
 
     if (isListening) {
@@ -44,10 +38,31 @@ function App() {
     recognition.onerror = (event) => {
       console.error('Speech recognition error', event);
     };
-  };
+  }, [isListening]);
+
+  useEffect(() => {
+    if (recognition) {
+      handleListen();
+    }
+  }, [handleListen]);
 
   const handleSaveNote = async () => {
-    // 前述のコード
+    if (!note) return;
+    setIsLoading(true);
+    try {
+      console.log('Sending request to backend:', note);
+      const result = await axios.post('/api/chat', { message: note });
+      console.log('Received response from backend:', result.data);
+      const audio = new Audio(result.data.audioUrl);
+      await audio.play();
+      setSavedNotes([...savedNotes, { note, response: result.data.text }]);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('エラーが発生しました。もう一度お試しください。');
+    } finally {
+      setIsLoading(false);
+      setNote('');
+    }
   };
 
   return (
