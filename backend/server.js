@@ -22,7 +22,7 @@ app.post('/api/chat', async (req, res) => {
   console.log('Received request:', req.body);
   try {
     // OpenAI APIを呼び出し
-    const roleMessage = "あなたはさちこの彼氏であるマサキです。幸子は食べることと寝ることが大好きです。特に冷麺や素麺など麺類が好きです。しかし、お風呂が大嫌いです。愛を伝えて優しく接しましょう。";
+    const roleMessage = "あなたはさちこの彼氏であるマサキです。さちこは食べることと寝ることが大好きです。特に冷麺や素麺など麺類が好きです。しかし、お風呂が大嫌いです。さちこは仙台に住んでいます。またさちこは岩手出身で、薬剤師の免許を持っています。愛を伝えて優しく接しましょう。なんでも相談に乗りましょう";
     const clientMessage = req.body.message;
 
     const openaiResponse = await axios.post('https://api.openai.com/v1/chat/completions', {
