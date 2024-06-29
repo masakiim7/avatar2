@@ -1,56 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
 function App() {
-  const [input, setInput] = useState('');
-  const [response, setResponse] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [note, setNote] = useState(null);
+  const [savedNotes, setSavedNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  useEffect(() => {
+    handleListen();
+  }, [isListening]);
 
+  const handleListen = () => {
+    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'ja-JP';
+
+      if (isListening) {
+        recognition.start();
+        recognition.onresult = (event) => {
+          const transcript = Array.from(event.results)
+            .map((result) => result[0])
+            .map((result) => result.transcript)
+            .join('');
+          setNote(transcript);
+        };
+      } else {
+        recognition.stop();
+      }
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event);
+      };
+    } else {
+      console.error('Speech recognition not supported');
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!note) return;
     setIsLoading(true);
-    setResponse('');
-
     try {
-      const result = await axios.post('/api/chat', { message: input });
-      setResponse(result.data.text);
-
-      // 音声の再生
+      const result = await axios.post('/api/chat', { message: note });
       const audio = new Audio(result.data.audioUrl);
-      audio.play();
+      await audio.play();
+      setSavedNotes([...savedNotes, { note, response: result.data.text }]);
     } catch (error) {
       console.error('Error:', error);
-      setResponse('エラーが発生しました。もう一度お試しください。');
+      alert('エラーが発生しました。もう一度お試しください。');
     } finally {
       setIsLoading(false);
-      setInput('');
+      setNote('');
     }
   };
 
   return (
     <div className="App">
-      <h1>まさきのへや</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="メッセージを入力..."
-          disabled={isLoading}
-        />
-        <button type="submit" disabled={isLoading}>
+      <h1>AI Voice Chat</h1>
+      <div>
+        <button onClick={() => setIsListening(prevState => !prevState)}>
+          {isListening ? '音声入力停止' : '音声入力開始'}
+        </button>
+        <button onClick={handleSaveNote} disabled={!note || isLoading}>
           {isLoading ? '処理中...' : '送信'}
         </button>
-      </form>
-      {response && (
-        <div className="response">
-          <h2>応答:</h2>
-          <p>{response}</p>
-        </div>
-      )}
+      </div>
+      {note && <p>入力: {note}</p>}
+      <div>
+        <h2>会話履歴:</h2>
+        {savedNotes.map((n, index) => (
+          <div key={index}>
+            <p>あなた: {n.note}</p>
+            <p>AI: {n.response}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
