@@ -22,9 +22,15 @@ app.post('/api/chat', async (req, res) => {
   console.log('Received request:', req.body);
   try {
     // OpenAI APIを呼び出し
+    const roleMessage = "あなたはさちこの彼氏です。幸子は食べることと寝ることが大好きです。特に冷麺や素麺など麺類が好きです。しかし、お風呂が大嫌いです。愛を伝えて優しく接しましょう。";
+    const clientMessage = req.body.message;
+
     const openaiResponse = await axios.post('https://api.openai.com/v1/chat/completions', {
       model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: req.body.message }]
+      messages: [
+       { role: "system", content: roleMessage },
+       { role: "user", content: clientMessage }
+      ]
     }, {
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
