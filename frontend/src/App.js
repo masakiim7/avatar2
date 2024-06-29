@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+if (recognition) {
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'ja-JP';
+} else {
+  console.error('Speech recognition not supported');
+}
+
 function App() {
   const [isListening, setIsListening] = useState(false);
   const [note, setNote] = useState(null);
@@ -9,44 +19,43 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    handleListen();
+    if (recognition) {
+      handleListen();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isListening]);
 
   const handleListen = () => {
-    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'ja-JP';
-
-      if (isListening) {
-        recognition.start();
-        recognition.onresult = (event) => {
-          const transcript = Array.from(event.results)
-            .map((result) => result[0])
-            .map((result) => result.transcript)
-            .join('');
-          setNote(transcript);
-        };
-      } else {
-        recognition.stop();
-      }
-
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error', event);
+    if (!recognition) {
+      console.error('Speech recognition not supported');
+      return;
+    }
+  
+    if (isListening) {
+      recognition.start();
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map((result) => result[0])
+          .map((result) => result.transcript)
+          .join('');
+        setNote(transcript);
       };
     } else {
-      console.error('Speech recognition not supported');
+      recognition.stop();
     }
+  
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error', event);
+    };
   };
 
   const handleSaveNote = async () => {
     if (!note) return;
     setIsLoading(true);
     try {
+      console.log('Sending request to backend:', note);
       const result = await axios.post('/api/chat', { message: note });
+      console.log('Received response from backend:', result.data);
       const audio = new Audio(result.data.audioUrl);
       await audio.play();
       setSavedNotes([...savedNotes, { note, response: result.data.text }]);
