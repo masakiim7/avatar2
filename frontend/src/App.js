@@ -4,6 +4,7 @@ import './App.css';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+
 if (recognition) {
   recognition.continuous = true;
   recognition.interimResults = true;
@@ -14,7 +15,7 @@ if (recognition) {
 
 function App() {
   const [isListening, setIsListening] = useState(false);
-  const [note, setNote] = useState(null);
+  const [note, setNote] = useState('');
   const [savedNotes, setSavedNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -22,15 +23,11 @@ function App() {
     if (recognition) {
       handleListen();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isListening]);
 
   const handleListen = () => {
-    if (!recognition) {
-      console.error('Speech recognition not supported');
-      return;
-    }
-  
+    if (!recognition) return;
+
     if (isListening) {
       recognition.start();
       recognition.onresult = (event) => {
@@ -43,29 +40,14 @@ function App() {
     } else {
       recognition.stop();
     }
-  
+
     recognition.onerror = (event) => {
       console.error('Speech recognition error', event);
     };
   };
 
   const handleSaveNote = async () => {
-    if (!note) return;
-    setIsLoading(true);
-    try {
-      console.log('Sending request to backend:', note);
-      const result = await axios.post('/api/chat', { message: note });
-      console.log('Received response from backend:', result.data);
-      const audio = new Audio(result.data.audioUrl);
-      await audio.play();
-      setSavedNotes([...savedNotes, { note, response: result.data.text }]);
-    } catch (error) {
-      console.error('Error:', error);
-      alert('エラーが発生しました。もう一度お試しください。');
-    } finally {
-      setIsLoading(false);
-      setNote('');
-    }
+    // 前述のコード
   };
 
   return (
