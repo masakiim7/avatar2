@@ -19,6 +19,7 @@ const polly = new AWS.Polly();
 const s3 = new AWS.S3();
 
 app.post('/api/chat', async (req, res) => {
+  console.log('Received request:', req.body);
   try {
     // OpenAI APIを呼び出し
     const openaiResponse = await axios.post('https://api.openai.com/v1/chat/completions', {
@@ -30,7 +31,6 @@ app.post('/api/chat', async (req, res) => {
         'Content-Type': 'application/json'
       }
     });
-
     const aiResponse = openaiResponse.data.choices[0].message.content;
 
     // Pollyを使用して音声合成
@@ -39,7 +39,6 @@ app.post('/api/chat', async (req, res) => {
       OutputFormat: 'mp3',
       VoiceId: 'Mizuki'  // 日本語音声
     };
-
     const pollyResult = await polly.synthesizeSpeech(pollyParams).promise();
 
     // S3にアップロード
@@ -49,14 +48,14 @@ app.post('/api/chat', async (req, res) => {
       Body: pollyResult.AudioStream,
       ContentType: 'audio/mpeg'
     };
-
     const s3Result = await s3.upload(s3Params).promise();
 
     // 音声ファイルのURLを返す
+    console.log('Sending response:', { audioUrl: s3Result.Location, text: aiResponse });
     res.json({ audioUrl: s3Result.Location, text: aiResponse });
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
 

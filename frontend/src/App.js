@@ -15,7 +15,7 @@ function App() {
     setResponse('');
 
     try {
-      const result = await axios.post('http://localhost:3001/api/chat', { message: input });
+      const result = await axios.post('/api/chat', { message: input });
       setResponse(result.data.text);
 
       // 音声の再生
