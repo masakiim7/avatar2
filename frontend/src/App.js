@@ -32,7 +32,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1>マサキの部屋</h1>
+      <h1>まさきのへや</h1>
       <form onSubmit={handleSubmit}>
         <input
           type="text"
